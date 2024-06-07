@@ -15,3 +15,4 @@ serverless-output.yaml
 *coverage*
 venv/
 secret.txt
+instructions.md
