@@ -3,3 +3,5 @@ pytest-cov
 pytest-testdox
 prefect
 requests
+boto3
+moto[s3]
