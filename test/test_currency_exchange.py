@@ -10,6 +10,7 @@ from src.currency_exchange import (
     load_currency_rates,
 )
 
+
 @pytest.fixture(scope="class")
 def aws_credentials():
     environ["AWS_ACCESS_KEY_ID"] = "test"
@@ -18,10 +19,12 @@ def aws_credentials():
     environ["AWS_SESSION_TOKEN"] = "test"
     environ["AWS_DEFAULT_REGION"] = "eu-west-2"
 
+
 @pytest.fixture(scope="function")
 def s3_client(aws_credentials):
     with mock_aws():
         yield boto3.client("s3")
+
 
 @pytest.fixture(scope="function")
 def test_bucket(s3_client):
@@ -29,7 +32,16 @@ def test_bucket(s3_client):
         Bucket="test_bucket",
         CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
     )
-    
+
+
+@pytest.fixture(scope="function")
+def test_exchange_data():
+    return {
+        "EUR": {"rate": 1.01, "reverse_rate": (1 / 1.01)},
+        "USD": {"rate": 1.5, "reverse_rate": (1 / 1.5)},
+    }
+
+
 @pytest.mark.describe("Extract currency rates tests")
 class TestExtract:
 
@@ -107,9 +119,19 @@ class TestTransform:
             transform_currency_rates(test_data, invalid_currency)
         assert f"{invalid_currency[1]} is not a valid currency code" in str(err.value)
 
+
 @pytest.mark.describe("Load currency rates tests")
 class TestLoad:
 
-    @pytest.mark.it("Load transformed data into S3 bucket")
-    def test_load_transformed_data_into_s3(self):
-        pass
+    @pytest.mark.it("Input data is not mutated")
+    def test_load_input_data_not_mutated(self, test_exchange_data, test_bucket):
+        test_data = test_exchange_data
+        copy_test_data = test_exchange_data
+        load_currency_rates(test_data, s3_bucket="test_bucket")
+        assert test_data == copy_test_data
+
+    @pytest.mark.it("Loads data to S3 bucket")
+    def test_load_data_in_s3_bucket(self, test_exchange_data, s3_client, test_bucket):
+        load_currency_rates(test_exchange_data, s3_bucket="test_bucket")
+        response = s3_client.list_objects_v2(Bucket="test_bucket")
+        assert response["KeyCount"] == 1

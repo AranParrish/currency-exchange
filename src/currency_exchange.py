@@ -1,9 +1,13 @@
 import requests
 from requests import HTTPError
 import json
+import boto3
+from botocore.exceptions import ClientError
+from datetime import date
 
 API_MAIN_SOURCE = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/gbp.json"
 API_FALLBACK_SOURCE = "https://latest.currency-api.pages.dev/v1/currencies/gbp.json"
+DATA_BUCKET = "ap-gbp-exchange-rate-data"
 
 
 def extract_currency_rates() -> dict:
@@ -79,5 +83,38 @@ def transform_currency_rates(
         raise TypeError("Invalid input format")
 
 
-def load_currency_rates(transformed_data: dict):
-    pass
+def load_currency_rates(transformed_data: dict, s3_bucket: str) -> None:
+    """Load transformed currency exchange rate data into S3 bucket.
+
+    Loads provided currency exchange rate data into the S3 data storage bucket created by Terraform.
+    Uses date stamp to keep files identifiable for each day, allowing analytics for trends over time.
+
+    Args:
+        transformed_data: Dictionary of rate and reverse rate for select currencies against GBP
+        s3_bucket: Name of the S3 bucket in which the exchange rate data is to be stored
+
+    Returns:
+        None.  Results are saved to an S3 bucket.
+
+    Raises:
+        TypeError if either input is not of the expected type.
+        NoSuchBucket if input s3 bucket does not exist.
+        ClientError if client connection fails.
+
+    """
+    if isinstance(transformed_data, dict) and isinstance(s3_bucket, str):
+        file = json.dumps(transformed_data, default=str)
+        key = f"{date.today()}"
+        for currency in transformed_data.keys():
+            key += f"-{currency}"
+        key += ".json"
+
+        try:
+            s3_client = boto3.client("s3")
+            s3_client.put_object(Bucket=s3_bucket, Key=key, Body=file)
+
+        except ClientError as e:
+            raise ClientError(f"Boto3 ClientError: {e}")
+
+    else:
+        raise TypeError("Invalid input format")
