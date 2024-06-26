@@ -2,6 +2,7 @@ import pytest
 from requests import HTTPError
 from unittest.mock import Mock, patch
 import boto3
+from botocore.exceptions import ClientError
 from moto import mock_aws
 from os import environ
 from src.currency_exchange import (
@@ -135,3 +136,27 @@ class TestLoad:
         load_currency_rates(test_exchange_data, s3_bucket="test_bucket")
         response = s3_client.list_objects_v2(Bucket="test_bucket")
         assert response["KeyCount"] == 1
+        assert "EUR" in response["Contents"][0]["Key"]
+        assert "USD" in response["Contents"][0]["Key"]
+
+    @pytest.mark.it("Raises ClientError if s3 bucket does not exist")
+    def test_load_raises_clienterror(self, test_exchange_data, s3_client):
+        with pytest.raises(ClientError) as e:
+            load_currency_rates(test_exchange_data, s3_bucket="test_bucket")
+        assert "NoSuchBucket" in str(e.value)
+
+    @pytest.mark.it("Raises TypeError if data input is not a dictionary")
+    def test_load_raises_typeerror_invalid_input_data(self, test_bucket):
+        invalid_input_data = []
+        with pytest.raises(TypeError) as e:
+            load_currency_rates(invalid_input_data, s3_bucket="test_bucket")
+        assert "Invalid input format" in str(e.value)
+
+    @pytest.mark.it("Raises TypeError if s3 bucket is not a string")
+    def test_load_raises_typeerror_invalid_s3_bucket_format(
+        self, test_exchange_data, test_bucket
+    ):
+        invalid_s3_bucket_format = []
+        with pytest.raises(TypeError) as e:
+            load_currency_rates(test_exchange_data, s3_bucket=invalid_s3_bucket_format)
+        assert "Invalid input format" in str(e.value)

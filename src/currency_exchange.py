@@ -114,7 +114,7 @@ def load_currency_rates(transformed_data: dict, s3_bucket: str) -> None:
             s3_client.put_object(Bucket=s3_bucket, Key=key, Body=file)
 
         except ClientError as e:
-            raise ClientError(f"Boto3 ClientError: {e}")
+            raise e
 
     else:
         raise TypeError("Invalid input format")
