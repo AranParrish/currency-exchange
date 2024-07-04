@@ -5,6 +5,7 @@ import boto3
 from botocore.exceptions import ClientError
 from moto import mock_aws
 from os import environ
+import logging
 from src.currency_exchange import (
     extract_currency_rates,
     transform_currency_rates,
@@ -52,13 +53,13 @@ class TestExtract:
         assert isinstance(output["gbp"], dict)
         assert isinstance(output["gbp"]["eur"], float)
 
-    @pytest.mark.it("Raises error if both servers busy")
-    def test_extract_fallback_if_main_busy(self):
+    @pytest.mark.it("Logs error if both servers busy")
+    def test_extract_fallback_if_main_busy(self, caplog):
         with patch("src.currency_exchange.requests.get") as mock_request:
             mock_request.return_value.status_code = 500
-            with pytest.raises(HTTPError) as err:
+            with caplog.at_level(logging.ERROR):
                 extract_currency_rates()
-            assert "Servers busy" in str(err.value)
+            assert "Servers busy" in caplog.text
 
 
 @pytest.mark.describe("Transform currency rates tests")
@@ -97,28 +98,28 @@ class TestTransform:
         output = transform_currency_rates(test_data, user_currencies)
         assert all([currency in output.keys() for currency in user_currencies])
 
-    @pytest.mark.it("Raises TypeError for invalid input data")
-    def test_transform_invalid_input_data(self):
+    @pytest.mark.it("Logs error for invalid input data")
+    def test_transform_invalid_input_data(self, caplog):
         invalid_test_data = ["gbp", ["eur", "usd"]]
-        with pytest.raises(TypeError) as err:
+        with caplog.at_level(logging.ERROR):
             transform_currency_rates(invalid_test_data)
-        assert "Invalid input format" in str(err.value)
+        assert "Invalid input format" in caplog.text
 
-    @pytest.mark.it("Raises TypeError for invalid currencies list")
-    def test_transform_invalid_currencies_list(self):
+    @pytest.mark.it("Logs error for invalid currencies list")
+    def test_transform_invalid_currencies_list(self, caplog):
         test_data = extract_currency_rates()
         invalid_currencies_list = ("btc", "eth")
-        with pytest.raises(TypeError) as err:
+        with caplog.at_level(logging.ERROR):
             transform_currency_rates(test_data, invalid_currencies_list)
-        assert "Invalid input format" in str(err.value)
+        assert "Invalid input format" in caplog.text
 
-    @pytest.mark.it("Raises KeyError for invalid currency")
-    def test_transform_invalid_currency(self):
+    @pytest.mark.it("Logs error for invalid currency")
+    def test_transform_invalid_currency(self, caplog):
         test_data = extract_currency_rates()
         invalid_currency = ["usd", "eurr"]
-        with pytest.raises(KeyError) as err:
+        with caplog.at_level(logging.ERROR):
             transform_currency_rates(test_data, invalid_currency)
-        assert f"{invalid_currency[1]} is not a valid currency code" in str(err.value)
+        assert f"{invalid_currency[1]} is not a valid currency code" in caplog.text
 
 
 @pytest.mark.describe("Load currency rates tests")
@@ -139,24 +140,24 @@ class TestLoad:
         assert "EUR" in response["Contents"][0]["Key"]
         assert "USD" in response["Contents"][0]["Key"]
 
-    @pytest.mark.it("Raises ClientError if s3 bucket does not exist")
-    def test_load_raises_clienterror(self, test_exchange_data, s3_client):
-        with pytest.raises(ClientError) as e:
+    @pytest.mark.it("Logs error if s3 bucket does not exist")
+    def test_load_raises_clienterror(self, test_exchange_data, s3_client, caplog):
+        with caplog.at_level(logging.ERROR):
             load_currency_rates(test_exchange_data, s3_bucket="test_bucket")
-        assert "NoSuchBucket" in str(e.value)
+        assert "NoSuchBucket" in caplog.text
 
-    @pytest.mark.it("Raises TypeError if data input is not a dictionary")
-    def test_load_raises_typeerror_invalid_input_data(self, test_bucket):
+    @pytest.mark.it("Logs error if data input is not a dictionary")
+    def test_load_raises_typeerror_invalid_input_data(self, test_bucket, caplog):
         invalid_input_data = []
-        with pytest.raises(TypeError) as e:
+        with caplog.at_level(logging.ERROR):
             load_currency_rates(invalid_input_data, s3_bucket="test_bucket")
-        assert "Invalid input format" in str(e.value)
+        assert "Invalid input format" in caplog.text
 
     @pytest.mark.it("Raises TypeError if s3 bucket is not a string")
     def test_load_raises_typeerror_invalid_s3_bucket_format(
-        self, test_exchange_data, test_bucket
+        self, test_exchange_data, test_bucket, caplog
     ):
         invalid_s3_bucket_format = []
-        with pytest.raises(TypeError) as e:
+        with caplog.at_level(logging.ERROR):
             load_currency_rates(test_exchange_data, s3_bucket=invalid_s3_bucket_format)
-        assert "Invalid input format" in str(e.value)
+        assert "Invalid input format" in caplog.text

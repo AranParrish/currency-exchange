@@ -1,13 +1,16 @@
 import requests
-from requests import HTTPError
 import json
 import boto3
-from botocore.exceptions import ClientError
 from datetime import date
+from botocore.exceptions import ClientError
+import logging
 
 API_MAIN_SOURCE = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/gbp.json"
 API_FALLBACK_SOURCE = "https://latest.currency-api.pages.dev/v1/currencies/gbp.json"
 DATA_BUCKET = "ap-gbp-exchange-rate-data"
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 def extract_currency_rates() -> dict:
@@ -30,6 +33,7 @@ def extract_currency_rates() -> dict:
     if api_response.status_code == 200:
 
         currency_rates = json.loads(api_response.text)
+        logger.info(f"Extracted currency rates for {date.today()}")
         return currency_rates
 
     elif api_response.status_code == 500:
@@ -38,10 +42,11 @@ def extract_currency_rates() -> dict:
         if fallback_response.status_code == 200:
 
             currency_rates = json.loads(fallback_response.text)
+            logger.info(f"Extracted currency rates for {date.today()}")
             return currency_rates
 
         elif fallback_response.status_code == 500:
-            raise HTTPError("Servers busy, try again later")
+            logger.error("Servers busy, try again later")
 
 
 def transform_currency_rates(
@@ -74,13 +79,13 @@ def transform_currency_rates(
                     "reverse_rate": 1 / extracted_data["gbp"][currency],
                 }
             except KeyError:
-                err_text = f"{currency} is not a valid currency code"
-                raise KeyError(err_text)
+                logger.error(f"{currency} is not a valid currency code")
 
+        logger.info("Successfully generated rate and reverse rate")
         return currencies
 
     else:
-        raise TypeError("Invalid input format")
+        logger.error("Invalid input format")
 
 
 def load_currency_rates(transformed_data: dict, s3_bucket: str) -> None:
@@ -112,9 +117,10 @@ def load_currency_rates(transformed_data: dict, s3_bucket: str) -> None:
         try:
             s3_client = boto3.client("s3")
             s3_client.put_object(Bucket=s3_bucket, Key=key, Body=file)
-
+            logger.info(f"Successfully loaded exchange rate info into {s3_bucket}")
+        
         except ClientError as e:
-            raise e
+            logger.error(e)
 
     else:
-        raise TypeError("Invalid input format")
+        logger.error("Invalid input format")
