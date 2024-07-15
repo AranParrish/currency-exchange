@@ -25,8 +25,8 @@ def extract_currency_rates() -> dict:
     Returns:
         A dictionary of currency rates against the base currency
 
-    Raises:
-        HTTPError if both servers busy
+    Error logs:
+        Servers busy if unable to get data from either API source
     """
 
     api_response = requests.get(API_MAIN_SOURCE)
@@ -65,9 +65,9 @@ def transform_currency_rates(
     Returns:
         A dictionary providing the rate and reverse rate against GBP for the specified currencies.
 
-    Raises:
-        TypeError if either input is not of the expected type
-        KeyError if any currency in currencies_list not found in the extracted_data
+    Error logs:
+        Invalid input is not of the expected type
+        Currency not valid if any currency in currencies_list not found in the extracted_data
     """
     currencies = {}
     if isinstance(extracted_data, dict) and isinstance(currencies_list, list):
@@ -101,10 +101,9 @@ def load_currency_rates(transformed_data: dict, s3_bucket: str) -> None:
     Returns:
         None.  Results are saved to an S3 bucket.
 
-    Raises:
-        TypeError if either input is not of the expected type.
-        NoSuchBucket if input s3 bucket does not exist.
-        ClientError if client connection fails.
+    Error logs:
+        Invalid input if either input is not of the expected type.
+        ClientError message if unable to put data in s3 bucket.
 
     """
     if isinstance(transformed_data, dict) and isinstance(s3_bucket, str):
@@ -118,7 +117,7 @@ def load_currency_rates(transformed_data: dict, s3_bucket: str) -> None:
             s3_client = boto3.client("s3")
             s3_client.put_object(Bucket=s3_bucket, Key=key, Body=file)
             logger.info(f"Successfully loaded exchange rate info into {s3_bucket}")
-        
+
         except ClientError as e:
             logger.error(e)
 
