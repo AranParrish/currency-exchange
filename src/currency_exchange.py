@@ -1,9 +1,16 @@
 import requests
-from requests import HTTPError
 import json
+import boto3
+from datetime import date
+from botocore.exceptions import ClientError
+import logging
 
 API_MAIN_SOURCE = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/gbp.json"
 API_FALLBACK_SOURCE = "https://latest.currency-api.pages.dev/v1/currencies/gbp.json"
+DATA_BUCKET = "ap-gbp-exchange-rate-data"
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 def extract_currency_rates() -> dict:
@@ -18,14 +25,15 @@ def extract_currency_rates() -> dict:
     Returns:
         A dictionary of currency rates against the base currency
 
-    Raises:
-        HTTPError if both servers busy
+    Error logs:
+        Servers busy if unable to get data from either API source
     """
 
     api_response = requests.get(API_MAIN_SOURCE)
     if api_response.status_code == 200:
 
         currency_rates = json.loads(api_response.text)
+        logger.info(f"Extracted currency rates for {date.today()}")
         return currency_rates
 
     elif api_response.status_code == 500:
@@ -34,10 +42,11 @@ def extract_currency_rates() -> dict:
         if fallback_response.status_code == 200:
 
             currency_rates = json.loads(fallback_response.text)
+            logger.info(f"Extracted currency rates for {date.today()}")
             return currency_rates
 
         elif fallback_response.status_code == 500:
-            raise HTTPError("Servers busy, try again later")
+            logger.error("Servers busy, try again later")
 
 
 def transform_currency_rates(
@@ -56,9 +65,9 @@ def transform_currency_rates(
     Returns:
         A dictionary providing the rate and reverse rate against GBP for the specified currencies.
 
-    Raises:
-        TypeError if either input is not of the expected type
-        KeyError if any currency in currencies_list not found in the extracted_data
+    Error logs:
+        Invalid input is not of the expected type
+        Currency not valid if any currency in currencies_list not found in the extracted_data
     """
     currencies = {}
     if isinstance(extracted_data, dict) and isinstance(currencies_list, list):
@@ -70,14 +79,47 @@ def transform_currency_rates(
                     "reverse_rate": 1 / extracted_data["gbp"][currency],
                 }
             except KeyError:
-                err_text = f"{currency} is not a valid currency code"
-                raise KeyError(err_text)
+                logger.error(f"{currency} is not a valid currency code")
 
+        logger.info("Successfully generated rate and reverse rate")
         return currencies
 
     else:
-        raise TypeError("Invalid input format")
+        logger.error("Invalid input format")
 
 
-def load_currency_rates(transformed_data: dict):
-    pass
+def load_currency_rates(transformed_data: dict, s3_bucket: str) -> None:
+    """Load transformed currency exchange rate data into S3 bucket.
+
+    Loads provided currency exchange rate data into the S3 data storage bucket created by Terraform.
+    Uses date stamp to keep files identifiable for each day, allowing analytics for trends over time.
+
+    Args:
+        transformed_data: Dictionary of rate and reverse rate for select currencies against GBP
+        s3_bucket: Name of the S3 bucket in which the exchange rate data is to be stored
+
+    Returns:
+        None.  Results are saved to an S3 bucket.
+
+    Error logs:
+        Invalid input if either input is not of the expected type.
+        ClientError message if unable to put data in s3 bucket.
+
+    """
+    if isinstance(transformed_data, dict) and isinstance(s3_bucket, str):
+        file = json.dumps(transformed_data, default=str)
+        key = f"{date.today()}"
+        for currency in transformed_data.keys():
+            key += f"-{currency}"
+        key += ".json"
+
+        try:
+            s3_client = boto3.client("s3")
+            s3_client.put_object(Bucket=s3_bucket, Key=key, Body=file)
+            logger.info(f"Successfully loaded exchange rate info into {s3_bucket}")
+
+        except ClientError as e:
+            logger.error(e)
+
+    else:
+        logger.error("Invalid input format")
