@@ -4,28 +4,6 @@
 #
 #    pip-compile requirements.in
 #
-aiosqlite==0.20.0
-    # via prefect
-alembic==1.13.1
-    # via prefect
-annotated-types==0.7.0
-    # via pydantic
-anyio==3.7.1
-    # via
-    #   httpx
-    #   prefect
-apprise==1.8.0
-    # via prefect
-asgi-lifespan==2.1.0
-    # via prefect
-async-timeout==4.0.3
-    # via asyncpg
-asyncpg==0.29.0
-    # via prefect
-attrs==23.2.0
-    # via
-    #   jsonschema
-    #   referencing
 boto3==1.34.125
     # via
     #   -r requirements.in
@@ -50,62 +28,14 @@ cffi==1.16.0
     # via cryptography
 charset-normalizer==3.3.2
     # via requests
-click==8.1.7
-    # via
-    #   apprise
-    #   prefect
-    #   typer
-    #   uvicorn
-cloudpickle==3.0.0
-    # via prefect
-colorama==0.4.6
-    # via griffe
-coolname==2.2.0
-    # via prefect
 coverage[toml]==7.5.3
     # via pytest-cov
-croniter==2.0.5
-    # via prefect
 cryptography==42.0.8
     # via
     #   moto
     #   prefect
-dateparser==1.2.0
-    # via prefect
-dnspython==2.6.1
-    # via email-validator
-docker==6.1.3
-    # via prefect
-email-validator==2.1.1
-    # via pydantic
-fsspec==2024.6.0
-    # via prefect
-google-auth==2.30.0
-    # via kubernetes
-graphviz==0.20.3
-    # via prefect
-greenlet==3.0.3
-    # via sqlalchemy
-griffe==0.45.3
-    # via prefect
-h11==0.14.0
-    # via
-    #   httpcore
-    #   uvicorn
-h2==4.1.0
-    # via httpx
 hpack==4.0.0
     # via h2
-httpcore==1.0.5
-    # via
-    #   httpx
-    #   prefect
-httpx[http2]==0.27.0
-    # via prefect
-humanize==4.9.0
-    # via
-    #   jinja2-humanize-extension
-    #   prefect
 hyperframe==6.0.1
     # via h2
 idna==3.7
@@ -114,37 +44,17 @@ idna==3.7
     #   email-validator
     #   httpx
     #   requests
-importlib-resources==6.1.3
-    # via prefect
 iniconfig==2.0.0
     # via pytest
-itsdangerous==2.2.0
-    # via prefect
 jinja2==3.1.4
     # via
     #   jinja2-humanize-extension
     #   moto
     #   prefect
-jinja2-humanize-extension==0.4.0
-    # via prefect
 jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-jsonpatch==1.33
-    # via prefect
-jsonpointer==3.0.0
-    # via jsonpatch
-jsonschema==4.22.0
-    # via prefect
-jsonschema-specifications==2023.12.1
-    # via jsonschema
-kubernetes==29.0.0
-    # via prefect
-mako==1.3.5
-    # via alembic
-markdown==3.6
-    # via apprise
 markdown-it-py==3.0.0
     # via rich
 markupsafe==2.1.5
@@ -160,37 +70,17 @@ oauthlib==3.2.2
     # via
     #   kubernetes
     #   requests-oauthlib
-orjson==3.10.4
-    # via prefect
 packaging==24.0
     # via
     #   docker
     #   prefect
     #   pytest
-pathspec==0.12.1
-    # via prefect
-pendulum==2.1.2
-    # via prefect
 pluggy==1.5.0
     # via pytest
-prefect==2.19.4
-    # via -r requirements.in
 py-partiql-parser==0.5.5
     # via moto
-pyasn1==0.6.0
-    # via
-    #   pyasn1-modules
-    #   rsa
-pyasn1-modules==0.4.0
-    # via google-auth
 pycparser==2.22
     # via cffi
-pydantic[email]==2.7.4
-    # via prefect
-pydantic-core==2.18.4
-    # via
-    #   prefect
-    #   pydantic
 pygments==2.18.0
     # via rich
 pytest==8.2.2
@@ -211,15 +101,6 @@ python-dateutil==2.9.0.post0
     #   moto
     #   pendulum
     #   prefect
-python-multipart==0.0.9
-    # via prefect
-python-slugify==8.0.4
-    # via prefect
-pytz==2024.1
-    # via
-    #   croniter
-    #   dateparser
-    #   prefect
 pytzdata==2020.1
     # via pendulum
 pyyaml==6.0.1
@@ -229,14 +110,6 @@ pyyaml==6.0.1
     #   moto
     #   prefect
     #   responses
-readchar==4.1.0
-    # via prefect
-referencing==0.35.1
-    # via
-    #   jsonschema
-    #   jsonschema-specifications
-regex==2024.5.15
-    # via dateparser
 requests==2.32.3
     # via
     #   -r requirements.in
@@ -246,81 +119,12 @@ requests==2.32.3
     #   moto
     #   requests-oauthlib
     #   responses
-requests-oauthlib==2.0.0
-    # via
-    #   apprise
-    #   kubernetes
 responses==0.25.2
     # via moto
-rfc3339-validator==0.1.4
-    # via prefect
-rich==13.7.1
-    # via
-    #   prefect
-    #   typer
-rpds-py==0.18.1
-    # via
-    #   jsonschema
-    #   referencing
-rsa==4.9
-    # via google-auth
-ruamel-yaml==0.18.6
-    # via prefect
 ruamel-yaml-clib==0.2.8
     # via ruamel-yaml
 s3transfer==0.10.1
     # via boto3
-shellingham==1.5.4
-    # via typer
-six==1.16.0
-    # via
-    #   kubernetes
-    #   python-dateutil
-    #   rfc3339-validator
-sniffio==1.3.1
-    # via
-    #   anyio
-    #   asgi-lifespan
-    #   httpx
-    #   prefect
-sqlalchemy[asyncio]==2.0.30
-    # via
-    #   alembic
-    #   prefect
-text-unidecode==1.3
-    # via python-slugify
-toml==0.10.2
-    # via prefect
-typer==0.12.3
-    # via prefect
-typing-extensions==4.12.2
-    # via
-    #   aiosqlite
-    #   alembic
-    #   prefect
-    #   pydantic
-    #   pydantic-core
-    #   sqlalchemy
-    #   typer
-tzlocal==5.2
-    # via dateparser
-ujson==5.10.0
-    # via prefect
-urllib3==2.2.1
-    # via
-    #   botocore
-    #   docker
-    #   kubernetes
-    #   requests
-    #   responses
-uvicorn==0.28.1
-    # via prefect
-websocket-client==1.8.0
-    # via
-    #   docker
-    #   kubernetes
-websockets==12.0
-    # via prefect
 werkzeug==3.0.3
     # via moto
 xmltodict==0.13.0
