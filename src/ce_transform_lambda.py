@@ -3,6 +3,7 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+
 def lambda_handler(event, context) -> dict:
     """Transform currency exchange rate data to give rate and reverse rate.
 
@@ -22,13 +23,15 @@ def lambda_handler(event, context) -> dict:
         Currency not valid if any currency in currencies_list not found in the extracted_data
     """
     currencies = {}
-    if isinstance(event[currency_rates], dict) and isinstance(event[currencies_list], list):
+    if isinstance(event["currency_rates"], dict) and isinstance(
+        event["currencies_list"], list
+    ):
 
-        for currency in event[currencies_list]:
+        for currency in event["currencies_list"]:
             try:
                 currencies[currency] = {
-                    "rate": event[currency_rates]["gbp"][currency],
-                    "reverse_rate": 1 / event[currency_rates]["gbp"][currency],
+                    "rate": event["currency_rates"]["gbp"][currency],
+                    "reverse_rate": 1 / event["currency_rates"]["gbp"][currency],
                 }
             except KeyError:
                 logger.error(f"{currency} is not a valid currency code")

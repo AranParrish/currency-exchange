@@ -10,6 +10,7 @@ DATA_BUCKET = os.environ["ce_bucket"]
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+
 def lambda_handler(event, context) -> None:
     """Load transformed currency exchange rate data into S3 bucket.
 
@@ -28,10 +29,10 @@ def lambda_handler(event, context) -> None:
         ClientError message if unable to put data in s3 bucket.
 
     """
-    if isinstance(event[currencies], dict) and isinstance(DATA_BUCKET, str):
-        file = json.dumps(event[currencies], default=str)
+    if isinstance(event["currencies"], dict) and isinstance(DATA_BUCKET, str):
+        file = json.dumps(event["currencies"], default=str)
         key = f"{date.today()}"
-        for currency in event[currencies].keys():
+        for currency in event["currencies"].keys():
             key += f"-{currency}"
         key += ".json"
 
