@@ -17,7 +17,7 @@ cachetools==5.3.3
     # via
     #   google-auth
     #   prefect
-certifi==2024.6.2
+certifi==2024.07.04
     # via
     #   apprise
     #   httpcore
