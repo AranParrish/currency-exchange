@@ -19,3 +19,8 @@ variable "load_lambda_name" {
     type = string
     default = "ce-load-lambda"
 }
+
+# variable "step_function_name" {
+#     type = string
+#     default = "ce-step-function"
+# }
