@@ -16,3 +16,6 @@ serverless-output.yaml
 venv/
 secret.txt
 instructions.md
+.terraform*
+__pycache**
+.pytest*
