@@ -33,3 +33,19 @@ def test_lambda_handler_main_fails_then_fallback_succeeds(mock_get):
     result = lambda_handler({}, {})
     assert result == mock_api_response
 
+@pytest.mark.integration
+def test_live_api_returns_data():
+    result = lambda_handler({}, {})
+    
+    assert isinstance(result, dict)
+    assert "gbp" in result
+    assert isinstance(result["gbp"], dict)
+
+@pytest.mark.integration
+def test_live_api_contains_expected_currencies():
+    result = lambda_handler({}, {})
+    
+    expected = ["usd", "eur", "cspr", "tzs", "hkd", "jpy"]
+    for currency in expected:
+        assert currency in result["gbp"]
+        assert isinstance(result["gbp"][currency], (float, int))
