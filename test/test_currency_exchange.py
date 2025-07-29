@@ -77,7 +77,7 @@ class TestExtract:
 
     @pytest.mark.it("Logs error if both servers busy")
     def test_extract_fallback_if_main_busy(self, caplog):
-        with patch("src.currency_exchange.requests.get") as mock_request:
+        with patch("src.ce_extract_lambda.requests.get") as mock_request:
             mock_request.return_value.status_code = 500
             with caplog.at_level(logging.ERROR):
                 extract_currency_rates(event="event", context="context")
