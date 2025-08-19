@@ -1,10 +1,7 @@
-import pytest
+import pytest, boto3, json, logging
 from unittest.mock import Mock, patch
-import boto3
-from botocore.exceptions import ClientError
 from moto import mock_aws
 from os import environ
-import logging
 
 with patch.dict(environ, {"ce_bucket": "test_bucket"}):
     from src.currency_exchange import (
@@ -12,12 +9,6 @@ with patch.dict(environ, {"ce_bucket": "test_bucket"}):
         transform_currency_rates,
         load_currency_rates,
     )
-
-# from src.ce_extract_lambda import lambda_handler as extract_currency_rates
-# from src.ce_transform_lambda import lambda_handler as transform_currency_rates
-
-# with patch.dict(environ, {"ce_bucket": "test_bucket"}):
-#     from src.currency_exchange import lambda_handler as load_currency_rates
 
 
 @pytest.fixture(scope="class")
@@ -80,6 +71,21 @@ class TestExtract:
             with caplog.at_level(logging.ERROR):
                 extract_currency_rates()
             assert "Servers busy" in caplog.text
+
+    @pytest.mark.it("Able to return rates from fallback API source")
+    def test_fallback_api_source(self):
+        mock_api_response = {"gbp": {"usd": 1.28, "eur": 1.17}}
+        with patch("src.currency_exchange.requests.get") as mock_request:
+            mock_request.side_effect = [
+                type("obj", (object,), {"status_code": 500}),
+                type(
+                    "obj",
+                    (object,),
+                    {"status_code": 200, "text": json.dumps(mock_api_response)},
+                ),
+            ]
+            output = extract_currency_rates()
+            assert output == mock_api_response
 
 
 @pytest.mark.describe("Transform currency rates tests")
