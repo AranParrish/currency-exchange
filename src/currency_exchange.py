@@ -4,10 +4,11 @@ import boto3
 from datetime import date
 from botocore.exceptions import ClientError
 import logging
+import os
 
 API_MAIN_SOURCE = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/gbp.json"
 API_FALLBACK_SOURCE = "https://latest.currency-api.pages.dev/v1/currencies/gbp.json"
-DATA_BUCKET = "ap-gbp-exchange-rate-data"
+DATA_BUCKET = os.environ["ce_bucket"]
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -88,7 +89,7 @@ def transform_currency_rates(
         logger.error("Invalid input format")
 
 
-def load_currency_rates(transformed_data: dict, s3_bucket: str) -> None:
+def load_currency_rates(transformed_data: dict, data_bucket: str) -> None:
     """Load transformed currency exchange rate data into S3 bucket.
 
     Loads provided currency exchange rate data into the S3 data storage bucket created by Terraform.
@@ -96,7 +97,7 @@ def load_currency_rates(transformed_data: dict, s3_bucket: str) -> None:
 
     Args:
         transformed_data: Dictionary of rate and reverse rate for select currencies against GBP
-        s3_bucket: Name of the S3 bucket in which the exchange rate data is to be stored
+        data_bucket: Name of the S3 bucket in which the exchange rate data is to be stored
 
     Returns:
         None.  Results are saved to an S3 bucket.
@@ -106,7 +107,7 @@ def load_currency_rates(transformed_data: dict, s3_bucket: str) -> None:
         ClientError message if unable to put data in s3 bucket.
 
     """
-    if isinstance(transformed_data, dict) and isinstance(s3_bucket, str):
+    if isinstance(transformed_data, dict) and isinstance(data_bucket, str):
         file = json.dumps(transformed_data, default=str)
         key = f"{date.today()}"
         for currency in transformed_data.keys():
@@ -115,8 +116,8 @@ def load_currency_rates(transformed_data: dict, s3_bucket: str) -> None:
 
         try:
             s3_client = boto3.client("s3")
-            s3_client.put_object(Bucket=s3_bucket, Key=key, Body=file)
-            logger.info(f"Successfully loaded exchange rate info into {s3_bucket}")
+            s3_client.put_object(Bucket=data_bucket, Key=key, Body=file)
+            logger.info(f"Successfully loaded exchange rate info into {data_bucket}")
 
         except ClientError as e:
             logger.error(e)
