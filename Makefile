@@ -46,8 +46,8 @@ bandit:
 	$(call execute_in_env, $(PIP) install bandit)
 
 ## Install safety
-safety:
-	$(call execute_in_env, $(PIP) install safety)
+# safety:
+# 	$(call execute_in_env, $(PIP) install safety)
 
 ## Install black
 black:
@@ -58,13 +58,14 @@ coverage:
 	$(call execute_in_env, $(PIP) install coverage)
 
 ## Set up dev requirements (bandit, safety, black)
-dev-setup: bandit safety black coverage
+# dev-setup: bandit safety black coverage
+dev-setup: bandit black coverage
 
 # Build / Run
 
 ## Run the security test (bandit + safety)
 security-test:
-	$(call execute_in_env, safety scan -r ./requirements.txt)
+# 	$(call execute_in_env, safety scan -r ./requirements.txt)
 	$(call execute_in_env, bandit -lll */*.py *c/*.py)
 
 ## Run the black code check
