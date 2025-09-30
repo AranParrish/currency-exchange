@@ -24,17 +24,22 @@ def dagbag():
     return DagBag()
 
 
+@pytest.fixture()
+def dag(dagbag):
+    ce_dag = dagbag.get_dag(dag_id="currency_exchange_dag")
+    return ce_dag
+
+
 # @pytest.fixture()
 # def dag():
 #     with DAG(
 #         dag_id="currency_exchange_dag",
 #         schedule="@daily",
-#         start_date=DATA_INTERVAL_START
+#         start_date=DATA_INTERVAL_START,
 #     ) as dag:
-#         MyCustomOperator(
-#             task_id="extract_currency_rates"
-#         )
+#         MyCustomOperator(task_id="extract_currency_rates")
 #     return dag
+
 
 # @pytest.fixture(scope="class")
 # def aws_credentials():
@@ -83,12 +88,33 @@ def dagbag():
 @pytest.mark.describe("DAG tests")
 class TestDag:
 
-    @pytest.mark.it("Dag successfully loaded")
+    @pytest.mark.it("DAG successfully loaded")
     def test_dag_loaded(self, dagbag):
         dag = dagbag.get_dag(dag_id="currency_exchange_dag")
         assert dagbag.import_errors == {}
         assert dag is not None
         assert len(dag.tasks) == 3
+
+    @pytest.mark.it("DAG contains expected tasks")
+    def test_dag_tasks(self, dag):
+        dag_order_dict = {
+            "extract_currency_rates": ["transform_currency_rates"],
+            "transform_currency_rates": ["load_currency_rates"],
+            "load_currency_rates": [],
+        }
+        assert dag.task_dict.keys() == dag_order_dict.keys()
+
+    @pytest.mark.it("DAG tasks in expected order")
+    def test_dag_tasks_order(self, dag):
+        dag_order_dict = {
+            "extract_currency_rates": ["transform_currency_rates"],
+            "transform_currency_rates": ["load_currency_rates"],
+            "load_currency_rates": [],
+        }
+        for task_id, downstream_list in dag_order_dict.items():
+            assert dag.has_task(task_id)
+            task = dag.get_task(task_id)
+            assert task.downstream_task_ids == set(downstream_list)
 
 
 # @pytest.mark.describe("Extract currency rates tests")
