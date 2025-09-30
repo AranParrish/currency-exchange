@@ -1,126 +1,156 @@
-import requests
-import json
-import boto3
-from datetime import date
-from botocore.exceptions import ClientError
-import logging
-import os
-
-API_MAIN_SOURCE = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/gbp.json"
-API_FALLBACK_SOURCE = "https://latest.currency-api.pages.dev/v1/currencies/gbp.json"
-DATA_BUCKET = os.environ["ce_bucket"]
+import logging, datetime
+from airflow.sdk import dag, task
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def extract_currency_rates() -> dict:
-    """Extracts today's currency exchange rates for great british pounds (GBP).
-
-    Extracts today's GBP currency rates using the provided API source,
-    using the fallback API source if that is busy.
-
-    Args:
-        None
-
-    Returns:
-        A dictionary of currency rates against the base currency
-
-    Error logs:
-        Servers busy if unable to get data from either API source
+@dag(
+    schedule="@daily",
+    start_date=datetime.datetime(2025, 9, 24),
+    catchup=False,
+    tags=["currency_exchange"],
+)
+def currency_exchange_dag():
     """
+    Apache Airflow DAG for orchestrating currency exchange ETL pipeline.
 
-    api_response = requests.get(API_MAIN_SOURCE)
-    if api_response.status_code == 200:
+    Allows orchestration of extract, tranform, load (ETL) pipeline for GBP currency exchange rates.
+    """
+    import os
 
-        currency_rates = json.loads(api_response.text)
-        logger.info(f"Extracted currency rates for {date.today()}")
-        return currency_rates
+    # DATA_BUCKET = os.environ["ce_bucket"]
+    DATA_BUCKET = "ap-gbp-exchange-rate-data"
 
-    elif api_response.status_code == 500:
+    @task
+    def extract_currency_rates() -> dict:
+        """
+        Extracts today's currency exchange rates for great british pounds (GBP).
 
-        fallback_response = requests.get(API_FALLBACK_SOURCE)
-        if fallback_response.status_code == 200:
+        Extracts today's GBP currency rates using the provided API source,
+        using the fallback API source if that is busy.
 
-            currency_rates = json.loads(fallback_response.text)
-            logger.info(f"Extracted currency rates for {date.today()}")
+        Args:
+            None
+
+        Returns:
+            A dictionary of currency rates against the base currency
+
+        Error logs:
+            Servers busy if unable to get data from either API source
+        """
+        import requests, json
+
+        API_MAIN_SOURCE = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/gbp.json"
+        API_FALLBACK_SOURCE = (
+            "https://latest.currency-api.pages.dev/v1/currencies/gbp.json"
+        )
+
+        api_response = requests.get(API_MAIN_SOURCE)
+        if api_response.status_code == 200:
+
+            currency_rates = json.loads(api_response.text)
+            logger.info(f"Extracted currency rates for {datetime.date.today()}")
             return currency_rates
 
-        elif fallback_response.status_code == 500:
-            logger.error("Servers busy, try again later")
+        elif api_response.status_code == 500:
 
+            fallback_response = requests.get(API_FALLBACK_SOURCE)
+            if fallback_response.status_code == 200:
 
-def transform_currency_rates(
-    extracted_data: dict, currencies_list: list = ["eur", "usd"]
-) -> dict:
-    """Transform currency exchange rate data to give rate and reverse rate.
+                currency_rates = json.loads(fallback_response.text)
+                logger.info(f"Extracted currency rates for {datetime.date.today()}")
+                return currency_rates
 
-    Transforms the inputted currency exchange rate data to provide the user with rate and
-    reverse rate values against the base currency of GBP.  By default, provides just EUR
-    and USD rates, but can optionally take a list of currencies to return.
+            elif fallback_response.status_code == 500:
+                logger.error("Servers busy, try again later")
 
-    Args:
-        extracted_data: GBP exchange rate source data
-        (optional) currencies_list: List of currency rates to be returned, defaults to EUR and USD.
+    @task
+    def transform_currency_rates(
+        extracted_data: dict, currencies_list: list = ["eur", "usd"]
+    ) -> dict:
+        """
+        Transform currency exchange rate data to give rate and reverse rate.
 
-    Returns:
-        A dictionary providing the rate and reverse rate against GBP for the specified currencies.
+        Transforms the inputted currency exchange rate data to provide the user with rate and
+        reverse rate values against the base currency of GBP.  By default, provides just EUR
+        and USD rates, but can optionally take a list of currencies to return.
 
-    Error logs:
-        Invalid input is not of the expected type
-        Currency not valid if any currency in currencies_list not found in the extracted_data
-    """
-    currencies = {}
-    if isinstance(extracted_data, dict) and isinstance(currencies_list, list):
+        Args:
+            extracted_data: GBP exchange rate source data
+            (optional) currencies_list: List of currency rates to be returned, defaults to EUR and USD.
 
-        for currency in currencies_list:
+        Returns:
+            A dictionary providing the rate and reverse rate against GBP for the specified currencies.
+
+        Error logs:
+            Invalid input is not of the expected type
+            Currency not valid if any currency in currencies_list not found in the extracted_data
+        """
+        currencies = {}
+        if isinstance(extracted_data, dict) and isinstance(currencies_list, list):
+
+            for currency in currencies_list:
+                try:
+                    currencies[currency] = {
+                        "rate": extracted_data["gbp"][currency],
+                        "reverse_rate": 1 / extracted_data["gbp"][currency],
+                    }
+                except KeyError:
+                    logger.error(f"{currency} is not a valid currency code")
+
+            logger.info("Successfully generated rate and reverse rate")
+            return currencies
+
+        else:
+            logger.error("Invalid input format")
+
+    @task
+    def load_currency_rates(transformed_data: dict, data_bucket: str) -> None:
+        """
+        Load transformed currency exchange rate data into S3 bucket.
+
+        Loads provided currency exchange rate data into the S3 data storage bucket created by Terraform.
+        Uses date stamp to keep files identifiable for each day, allowing analytics for trends over time.
+
+        Args:
+            transformed_data: Dictionary of rate and reverse rate for select currencies against GBP
+            data_bucket: Name of the S3 bucket in which the exchange rate data is to be stored
+
+        Returns:
+            None.  Results are saved to an S3 bucket.
+
+        Error logs:
+            Invalid input if either input is not of the expected type.
+            ClientError message if unable to put data in s3 bucket.
+
+        """
+        import json, boto3, os
+        from botocore.exceptions import ClientError
+
+        if isinstance(transformed_data, dict) and isinstance(data_bucket, str):
+            file = json.dumps(transformed_data, default=str)
+            key = f"{datetime.date.today()}"
+            for currency in transformed_data.keys():
+                key += f"-{currency}"
+            key += ".json"
+
             try:
-                currencies[currency] = {
-                    "rate": extracted_data["gbp"][currency],
-                    "reverse_rate": 1 / extracted_data["gbp"][currency],
-                }
-            except KeyError:
-                logger.error(f"{currency} is not a valid currency code")
+                s3_client = boto3.client("s3")
+                s3_client.put_object(Bucket=data_bucket, Key=key, Body=file)
+                logger.info(
+                    f"Successfully loaded exchange rate info into {data_bucket}"
+                )
 
-        logger.info("Successfully generated rate and reverse rate")
-        return currencies
+            except ClientError as e:
+                logger.error(e)
 
-    else:
-        logger.error("Invalid input format")
+        else:
+            logger.error("Invalid input format")
+
+    extract_data = extract_currency_rates()
+    transformed_data = transform_currency_rates(extract_data)
+    load_currency_rates(transformed_data, DATA_BUCKET)
 
 
-def load_currency_rates(transformed_data: dict, data_bucket: str) -> None:
-    """Load transformed currency exchange rate data into S3 bucket.
-
-    Loads provided currency exchange rate data into the S3 data storage bucket created by Terraform.
-    Uses date stamp to keep files identifiable for each day, allowing analytics for trends over time.
-
-    Args:
-        transformed_data: Dictionary of rate and reverse rate for select currencies against GBP
-        data_bucket: Name of the S3 bucket in which the exchange rate data is to be stored
-
-    Returns:
-        None.  Results are saved to an S3 bucket.
-
-    Error logs:
-        Invalid input if either input is not of the expected type.
-        ClientError message if unable to put data in s3 bucket.
-
-    """
-    if isinstance(transformed_data, dict) and isinstance(data_bucket, str):
-        file = json.dumps(transformed_data, default=str)
-        key = f"{date.today()}"
-        for currency in transformed_data.keys():
-            key += f"-{currency}"
-        key += ".json"
-
-        try:
-            s3_client = boto3.client("s3")
-            s3_client.put_object(Bucket=data_bucket, Key=key, Body=file)
-            logger.info(f"Successfully loaded exchange rate info into {data_bucket}")
-
-        except ClientError as e:
-            logger.error(e)
-
-    else:
-        logger.error("Invalid input format")
+currency_exchange_dag()
