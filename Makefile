@@ -82,3 +82,9 @@ check-coverage:
 
 ## Run all checks
 run-checks: security-test run-black unit-test check-coverage
+
+################################################################################################################
+# Apache Airflow orchestration
+## Run Airflow on local host with DAG code source set
+airflow-local:
+	$(call execute_in_env, AIRFLOW__CORE__DAGS_FOLDER=${WD}/src airflow standalone)
