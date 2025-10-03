@@ -105,7 +105,7 @@ def load_currency_rates(transformed_data: dict, data_bucket: str) -> None:
         ClientError message if unable to put data in s3 bucket.
 
     """
-    import json, boto3, os
+    import json, boto3
     from botocore.exceptions import ClientError
 
     if isinstance(transformed_data, dict) and isinstance(data_bucket, str):
@@ -141,8 +141,7 @@ def currency_exchange_dag():
     """
     import os
 
-    # DATA_BUCKET = os.environ["ce_bucket"]
-    DATA_BUCKET = "ap-gbp-exchange-rate-data"
+    DATA_BUCKET = os.environ["ce_bucket"]
 
     @task
     def extract_task():
