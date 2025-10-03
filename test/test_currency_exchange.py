@@ -1,9 +1,11 @@
 import pytest, boto3, json, logging
 from unittest.mock import Mock, patch
 from moto import mock_aws
-from os import environ
-
+from os import environ, getcwd
 from airflow.models import DagBag
+
+wd = getcwd()
+dag_dir = wd + "/src"
 
 with patch.dict("os.environ", {"ce_bucket": "test_bucket"}):
     from src.currency_exchange import (
@@ -17,7 +19,7 @@ with patch.dict("os.environ", {"ce_bucket": "test_bucket"}):
 def dagbag():
     with patch.dict("os.environ", {"ce_bucket": "test_bucket"}):
         test_dagbag = DagBag(
-            dag_folder="/Users/aranparrish/Documents/Northcoders/cloud/de-currency-exchange/src",
+            dag_folder=dag_dir,
             include_examples=False,
         )
         return test_dagbag
