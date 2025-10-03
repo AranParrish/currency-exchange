@@ -5,7 +5,7 @@ from os import environ
 
 from airflow.models import DagBag
 
-with patch.dict(environ, {"ce_bucket": "test_bucket"}):
+with patch.dict("os.environ", {"ce_bucket": "test_bucket"}):
     from src.currency_exchange import (
         extract_currency_rates,
         transform_currency_rates,
@@ -15,7 +15,12 @@ with patch.dict(environ, {"ce_bucket": "test_bucket"}):
 
 @pytest.fixture()
 def dagbag():
-    return DagBag()
+    with patch.dict("os.environ", {"ce_bucket": "test_bucket"}):
+        test_dagbag = DagBag(
+            dag_folder="/Users/aranparrish/Documents/Northcoders/cloud/de-currency-exchange/src",
+            include_examples=False,
+        )
+        return test_dagbag
 
 
 @pytest.fixture()
