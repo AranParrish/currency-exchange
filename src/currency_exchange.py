@@ -1,4 +1,4 @@
-import logging, datetime
+import logging, datetime, pendulum
 from airflow.sdk import dag, task
 
 logger = logging.getLogger()
@@ -129,7 +129,7 @@ def load_currency_rates(transformed_data: dict, data_bucket: str) -> None:
 
 @dag(
     schedule="@daily",
-    start_date=datetime.datetime(2025, 9, 24),
+    start_date=pendulum.datetime(2025, 9, 24, tz="Europe/London"),
     catchup=False,
     tags=["currency_exchange"],
 )

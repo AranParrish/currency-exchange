@@ -1,4 +1,4 @@
-import pytest, boto3, json, logging, datetime
+import pytest, boto3, json, logging
 from unittest.mock import Mock, patch
 from moto import mock_aws
 from os import environ
