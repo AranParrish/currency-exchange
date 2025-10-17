@@ -8,6 +8,7 @@ resource "aws_s3_bucket" "ce_s3" {
     Name        = "CurrencyExchangeS3"
     Environment = "Dev"
   }
+  force_destroy = true
 }
 
 # Currency exchange DAG bucket
@@ -18,6 +19,7 @@ resource "aws_s3_bucket" "dag_s3" {
     Name        = "CurrencyExchangeDAGS3"
     Environment = "Dev"
   }
+  force_destroy = true
 }
 
 resource "aws_s3_bucket_versioning" "ce_dags_versioning" {
