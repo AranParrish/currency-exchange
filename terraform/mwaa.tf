@@ -6,7 +6,7 @@ resource "aws_mwaa_environment" "ce_airflow_env" {
   source_bucket_arn     = aws_s3_bucket.dag_s3.arn
   dag_s3_path           = "dags"
   airflow_version       = "3.0.6"     # MWAA version must match available Airflow version
-  environment_class     = "mw1.small"
+  environment_class     = "mw1.micro"
   max_workers           = 5
   min_workers           = 1
   schedulers            = 2
@@ -48,7 +48,7 @@ resource "aws_mwaa_environment" "ce_airflow_env" {
   }
 
   depends_on = [aws_s3_object.startup_script]
-  
+
 }
 
 # VPC for MWAA
