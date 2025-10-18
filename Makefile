@@ -59,7 +59,12 @@ coverage:
 
 ## Set up dev requirements (bandit, safety, black)
 # dev-setup: bandit safety black coverage
-dev-setup: bandit black coverage
+dev-setup: bandit black coverage airflow-init
+
+## Initialize Airflow database and home directory
+airflow-init:
+	$(call execute_in_env, mkdir -p ~/airflow)
+	$(call execute_in_env, AIRFLOW_HOME=~/airflow airflow db migrate)
 
 # Build / Run
 
