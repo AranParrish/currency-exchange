@@ -128,7 +128,7 @@ def load_currency_rates(transformed_data: dict, data_bucket: str) -> None:
 
 
 @dag(
-    schedule="@daily",
+    schedule="0 1 * * *",
     start_date=pendulum.datetime(2025, 9, 24, tz="Europe/London"),
     catchup=False,
     tags=["currency_exchange"],
