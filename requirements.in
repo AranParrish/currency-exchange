@@ -1,7 +1,0 @@
-pytest
-pytest-cov
-pytest-testdox
-requests
-boto3
-moto[s3]
-apache-airflow[amazon]==3.0.3 --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-3.0.3/constraints-3.12.txt"

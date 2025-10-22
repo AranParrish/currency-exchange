@@ -33,11 +33,11 @@ define execute_in_env
 	$(ACTIVATE_ENV) && $1
 endef
 
-## Build the environment requirements
-requirements: create-environment
+## Build the local environment requirements
+local-requirements: create-environment
 	$(call execute_in_env, $(PIP) install pip-tools)
-	$(call execute_in_env, pip-compile requirements.in)
-	$(call execute_in_env, $(PIP) install -r ./requirements.txt)
+	$(call execute_in_env, pip-compile requirements/local_reqs.in --output-file requirements/local_reqs.txt)
+	$(call execute_in_env, $(PIP) install -r ./requirements/local_reqs.txt)
 
 ################################################################################################################
 # Set Up
