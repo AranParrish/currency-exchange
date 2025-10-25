@@ -1,4 +1,5 @@
 import logging, datetime, pendulum
+from datetime import UTC
 from airflow.sdk import dag, task
 
 logger = logging.getLogger()
@@ -30,7 +31,7 @@ def extract_currency_rates() -> dict:
     if api_response.status_code == 200:
 
         currency_rates = json.loads(api_response.text)
-        logger.info(f"Extracted currency rates for {datetime.date.today()}")
+        logger.info(f"Extracted currency rates for {datetime.datetime.now(UTC).date()}")
         return currency_rates
 
     elif api_response.status_code == 500:
@@ -39,7 +40,9 @@ def extract_currency_rates() -> dict:
         if fallback_response.status_code == 200:
 
             currency_rates = json.loads(fallback_response.text)
-            logger.info(f"Extracted currency rates for {datetime.date.today()}")
+            logger.info(
+                f"Extracted currency rates for {datetime.datetime.now(UTC).date()}"
+            )
             return currency_rates
 
         elif fallback_response.status_code == 500:
@@ -110,7 +113,7 @@ def load_currency_rates(transformed_data: dict, data_bucket: str) -> None:
 
     if isinstance(transformed_data, dict) and isinstance(data_bucket, str):
         file = json.dumps(transformed_data, default=str)
-        key = f"{datetime.date.today()}"
+        key = f"{datetime.datetime.now(UTC).date()}"
         for currency in transformed_data.keys():
             key += f"-{currency}"
         key += ".json"
