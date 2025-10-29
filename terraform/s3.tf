@@ -76,9 +76,6 @@ resource "aws_s3_object" "ce_dag" {
     aws_s3_bucket_versioning.ce_dags_versioning,
     aws_s3_bucket_public_access_block.dag_s3_block
    ]
-  lifecycle {
-    ignore_changes = [ version_id ]
-  }
 }
 
 # Upload requirements.txt to DAG bucket
@@ -92,9 +89,6 @@ resource "aws_s3_object" "reqs" {
     aws_s3_bucket_versioning.ce_dags_versioning,
     aws_s3_bucket_public_access_block.dag_s3_block
    ]
-  lifecycle {
-    ignore_changes = [ version_id ]
-  }
 }
 
 # Upload startup script to DAG bucket for setting data bucket environment variable
