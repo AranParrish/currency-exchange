@@ -141,7 +141,8 @@ def currency_exchange_dag():
     """
     import os
 
-    DATA_BUCKET = os.environ["ce_bucket"]
+    # DATA_BUCKET = os.environ["ce_bucket"]
+    DATA_BUCKET = "ap-gbp-exchange-rate-data"
 
     @task
     def extract_task():
