@@ -85,7 +85,7 @@ resource "aws_s3_object" "ce_dag" {
 
 resource "aws_s3_object" "reqs" {
   bucket = aws_s3_bucket.dag_s3.id
-  key = "requirements/cloud_reqs.txt"
+  key = "cloud_reqs.txt"
   source = "../requirements/cloud_reqs.txt"
   etag = filemd5("../requirements/cloud_reqs.txt")
   depends_on = [ 
