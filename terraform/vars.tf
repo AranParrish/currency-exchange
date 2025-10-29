@@ -21,5 +21,5 @@ variable "s3_ce_dag_bucket" {
 variable "mwaa_name" {
     description = "Name of MWAA environment"
     type = string
-    default = "ce-mwaa"
+    default = "test-ce-mwaa"
 }
