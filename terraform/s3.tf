@@ -101,6 +101,7 @@ resource "aws_s3_object" "startup_script" {
     export ce_bucket="${aws_s3_bucket.ce_s3.bucket}"
   EOT
   depends_on = [ 
-    aws_s3_bucket_versioning.ce_dags_versioning
+    aws_s3_bucket_versioning.ce_dags_versioning,
+    aws_s3_bucket_public_access_block.dag_s3_block
    ]
 }
