@@ -132,6 +132,7 @@ def load_currency_rates(transformed_data: dict, data_bucket: str) -> None:
     start_date=pendulum.datetime(2025, 9, 24, tz="Europe/London"),
     catchup=False,
     tags=["currency_exchange"],
+    is_paused_upon_creation=False
 )
 def currency_exchange_dag():
     """
@@ -141,8 +142,7 @@ def currency_exchange_dag():
     """
     import os
 
-    # DATA_BUCKET = os.environ["ce_bucket"]
-    DATA_BUCKET = "ap-gbp-exchange-rate-data"
+    DATA_BUCKET = os.environ["ce_bucket"]
 
     @task
     def extract_task():
