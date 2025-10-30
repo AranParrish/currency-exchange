@@ -63,7 +63,9 @@ data "aws_iam_policy_document" "mwaa_s3_access" {
         "arn:aws:s3:::${aws_s3_bucket.dag_s3.bucket}",
         "arn:aws:s3:::${aws_s3_bucket.dag_s3.bucket}/*",
         "arn:aws:s3:::${aws_s3_bucket.ce_s3.bucket}",
-        "arn:aws:s3:::${aws_s3_bucket.ce_s3.bucket}/*"
+        "arn:aws:s3:::${aws_s3_bucket.ce_s3.bucket}/*",
+        "arn:aws:s3:::ap-gbp-exchange-rate-data",
+        "arn:aws:s3:::ap-gbp-exchange-rate-data/*",
         ]
   }
 }
@@ -119,10 +121,12 @@ data "aws_iam_policy_document" "mwaa_kms_access" {
         "kms:Encrypt"
     ]
     resources = [ 
-        "arn:aws:kms:*:${data.aws_caller_identity.current.account_id}:key/*",
-        "arn:aws:kms:*:aws:alias/aws/s3",
-        "arn:aws:kms:*:aws:alias/aws/sqs",
-        "arn:aws:kms:*:aws:alias/aws/logs"
+        "*"
+        # "arn:aws:kms:*:${data.aws_caller_identity.current.account_id}:key/*",
+        # "arn:aws:kms:*:aws:alias/aws/s3",
+        # "arn:aws:kms:*:aws:alias/aws/sqs",
+        # "arn:aws:kms:*:aws:alias/aws/logs",
+        # "arn:aws:kms:*:aws:alias/aws/airflow",
      ]
     }
 }
