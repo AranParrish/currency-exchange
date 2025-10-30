@@ -1,7 +1,10 @@
-## Creates and configures S3 buckets
+## Creates and configures S3 buckets and upload required Airflow files
 
-# Currency exchange data bucket
+#################################
+# Currency exchange data bucket #
+#################################
 
+# Create data bucket
 resource "aws_s3_bucket" "ce_s3" {
   bucket_prefix = "${var.s3_ce_data}-"
   tags = {
@@ -11,26 +14,20 @@ resource "aws_s3_bucket" "ce_s3" {
   force_destroy = true
 }
 
-# resource "aws_s3_bucket_server_side_encryption_configuration" "mwaa_data_sse" {
-#   bucket = aws_s3_bucket.ce_s3.id
-#   rule {
-#     apply_server_side_encryption_by_default {
-#       sse_algorithm = "aws:kms"
-#       kms_master_key_id = "alias/aws/s3"
-#     }
-#   }
-# }
-
+# Block general public access for data bucket, but allow IAM controlled access
 resource "aws_s3_bucket_public_access_block" "data_s3_block" {
   bucket = aws_s3_bucket.ce_s3.id
   block_public_acls = true
-  block_public_policy = true
   ignore_public_acls = true
-  restrict_public_buckets = true
+  block_public_policy = false
+  restrict_public_buckets = false
 }
 
-# Currency exchange DAG bucket
+#################################
+# Currency exchange DAG bucket ##
+#################################
 
+# Create DAG bucket
 resource "aws_s3_bucket" "dag_s3" {
   bucket_prefix = "${var.s3_ce_dag_bucket}-"
   tags = {
@@ -40,16 +37,7 @@ resource "aws_s3_bucket" "dag_s3" {
   force_destroy = true
 }
 
-# resource "aws_s3_bucket_server_side_encryption_configuration" "mwaa_dag_sse" {
-#   bucket = aws_s3_bucket.dag_s3.id
-#   rule {
-#     apply_server_side_encryption_by_default {
-#       sse_algorithm = "aws:kms"
-#       kms_master_key_id = "alias/aws/s3"
-#     }
-#   }
-# }
-
+# Enable versioning for DAG bucket (required for MWAA)
 resource "aws_s3_bucket_versioning" "ce_dags_versioning" {
   bucket = aws_s3_bucket.dag_s3.id
   versioning_configuration {
@@ -57,6 +45,7 @@ resource "aws_s3_bucket_versioning" "ce_dags_versioning" {
   }
 }
 
+# Block all public access on DAG bucket (required for MWAA)
 resource "aws_s3_bucket_public_access_block" "dag_s3_block" {
   bucket = aws_s3_bucket.dag_s3.id
   block_public_acls = true
@@ -66,7 +55,6 @@ resource "aws_s3_bucket_public_access_block" "dag_s3_block" {
 }
 
 # Upload DAG to DAG bucket
-
 resource "aws_s3_object" "ce_dag" {
   bucket = aws_s3_bucket.dag_s3.id
   key = "dags/${var.ce_dag_filename}"
@@ -79,7 +67,6 @@ resource "aws_s3_object" "ce_dag" {
 }
 
 # Upload requirements.txt to DAG bucket
-
 resource "aws_s3_object" "reqs" {
   bucket = aws_s3_bucket.dag_s3.id
   key = "cloud_reqs.txt"
@@ -92,7 +79,6 @@ resource "aws_s3_object" "reqs" {
 }
 
 # Upload startup script to DAG bucket for setting data bucket environment variable
-
 resource "aws_s3_object" "startup_script" {
   bucket = aws_s3_bucket.dag_s3.id
   key = "startup/startup.sh"
