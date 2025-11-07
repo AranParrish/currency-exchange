@@ -35,31 +35,11 @@ endef
 
 ## Build the local environment requirements
 local-requirements: create-environment
-	$(call execute_in_env, $(PIP) install pip-tools)
-	$(call execute_in_env, pip-compile requirements/local_reqs.in --output-file requirements/local_reqs.txt)
 	$(call execute_in_env, $(PIP) install -r ./requirements/local_reqs.txt)
-
-################################################################################################################
-# Set Up
-## Install bandit
-bandit:
-	$(call execute_in_env, $(PIP) install bandit)
 
 ## Install safety
 # safety:
 # 	$(call execute_in_env, $(PIP) install safety)
-
-## Install black
-black:
-	$(call execute_in_env, $(PIP) install black)
-
-## Install coverage
-coverage:
-	$(call execute_in_env, $(PIP) install coverage)
-
-## Set up dev requirements (bandit, safety, black)
-# dev-setup: bandit safety black coverage
-dev-setup: bandit black coverage
 
 # Build / Run
 
