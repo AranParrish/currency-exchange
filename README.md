@@ -23,7 +23,7 @@ You should also have a basic understanding of orchestration with Apache Airflow.
 ---
 
 ## Getting Started
-Clone the repository to your local directory and cd into the root directory:
+Fork and clone the repository to your local directory and cd into the root directory:
 
 ```sh
 git clone https://github.com/AranParrish/currency-exchange.git
