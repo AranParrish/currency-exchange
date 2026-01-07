@@ -33,38 +33,19 @@ define execute_in_env
 	$(ACTIVATE_ENV) && $1
 endef
 
-## Build the environment requirements
-requirements: create-environment
-	$(call execute_in_env, $(PIP) install pip-tools)
-	$(call execute_in_env, pip-compile requirements.in)
-	$(call execute_in_env, $(PIP) install -r ./requirements.txt)
-
-################################################################################################################
-# Set Up
-## Install bandit
-bandit:
-	$(call execute_in_env, $(PIP) install bandit)
+## Build the local environment requirements
+local-requirements: create-environment
+	$(call execute_in_env, $(PIP) install -r ./requirements/local_reqs.txt)
 
 ## Install safety
-safety:
-	$(call execute_in_env, $(PIP) install safety)
-
-## Install black
-black:
-	$(call execute_in_env, $(PIP) install black)
-
-## Install coverage
-coverage:
-	$(call execute_in_env, $(PIP) install coverage)
-
-## Set up dev requirements (bandit, safety, black)
-dev-setup: bandit safety black coverage
+# safety:
+# 	$(call execute_in_env, $(PIP) install safety)
 
 # Build / Run
 
 ## Run the security test (bandit + safety)
 security-test:
-	$(call execute_in_env, safety scan -r ./requirements.txt)
+# 	$(call execute_in_env, safety scan -r ./requirements.txt)
 	$(call execute_in_env, bandit -lll */*.py *c/*.py)
 
 ## Run the black code check
@@ -81,3 +62,9 @@ check-coverage:
 
 ## Run all checks
 run-checks: security-test run-black unit-test check-coverage
+
+################################################################################################################
+# Apache Airflow orchestration
+## Run Airflow on local host with DAG code source set
+airflow-local:
+	$(call execute_in_env, AIRFLOW__CORE__DAGS_FOLDER=${WD}/src airflow standalone)

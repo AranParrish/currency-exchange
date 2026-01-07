@@ -1,6 +1,0 @@
-pytest
-pytest-cov
-pytest-testdox
-requests
-boto3
-moto[s3]

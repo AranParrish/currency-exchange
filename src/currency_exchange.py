@@ -1,20 +1,13 @@
-import requests
-import json
-import boto3
-from datetime import date
-from botocore.exceptions import ClientError
-import logging
-
-API_MAIN_SOURCE = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/gbp.json"
-API_FALLBACK_SOURCE = "https://latest.currency-api.pages.dev/v1/currencies/gbp.json"
-DATA_BUCKET = "ap-gbp-exchange-rate-data"
+import logging, datetime, pendulum
+from airflow.sdk import dag, task
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
 def extract_currency_rates() -> dict:
-    """Extracts today's currency exchange rates for great british pounds (GBP).
+    """
+    Extracts today's currency exchange rates for great british pounds (GBP).
 
     Extracts today's GBP currency rates using the provided API source,
     using the fallback API source if that is busy.
@@ -28,12 +21,16 @@ def extract_currency_rates() -> dict:
     Error logs:
         Servers busy if unable to get data from either API source
     """
+    import requests, json
+
+    API_MAIN_SOURCE = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/gbp.json"
+    API_FALLBACK_SOURCE = "https://latest.currency-api.pages.dev/v1/currencies/gbp.json"
 
     api_response = requests.get(API_MAIN_SOURCE)
     if api_response.status_code == 200:
 
         currency_rates = json.loads(api_response.text)
-        logger.info(f"Extracted currency rates for {date.today()}")
+        logger.info(f"Extracted currency rates for {datetime.date.today()}")
         return currency_rates
 
     elif api_response.status_code == 500:
@@ -42,7 +39,7 @@ def extract_currency_rates() -> dict:
         if fallback_response.status_code == 200:
 
             currency_rates = json.loads(fallback_response.text)
-            logger.info(f"Extracted currency rates for {date.today()}")
+            logger.info(f"Extracted currency rates for {datetime.date.today()}")
             return currency_rates
 
         elif fallback_response.status_code == 500:
@@ -52,7 +49,8 @@ def extract_currency_rates() -> dict:
 def transform_currency_rates(
     extracted_data: dict, currencies_list: list = ["eur", "usd"]
 ) -> dict:
-    """Transform currency exchange rate data to give rate and reverse rate.
+    """
+    Transform currency exchange rate data to give rate and reverse rate.
 
     Transforms the inputted currency exchange rate data to provide the user with rate and
     reverse rate values against the base currency of GBP.  By default, provides just EUR
@@ -88,15 +86,16 @@ def transform_currency_rates(
         logger.error("Invalid input format")
 
 
-def load_currency_rates(transformed_data: dict, s3_bucket: str) -> None:
-    """Load transformed currency exchange rate data into S3 bucket.
+def load_currency_rates(transformed_data: dict, data_bucket: str) -> None:
+    """
+    Load transformed currency exchange rate data into S3 bucket.
 
     Loads provided currency exchange rate data into the S3 data storage bucket created by Terraform.
     Uses date stamp to keep files identifiable for each day, allowing analytics for trends over time.
 
     Args:
         transformed_data: Dictionary of rate and reverse rate for select currencies against GBP
-        s3_bucket: Name of the S3 bucket in which the exchange rate data is to be stored
+        data_bucket: Name of the S3 bucket in which the exchange rate data is to be stored
 
     Returns:
         None.  Results are saved to an S3 bucket.
@@ -106,20 +105,60 @@ def load_currency_rates(transformed_data: dict, s3_bucket: str) -> None:
         ClientError message if unable to put data in s3 bucket.
 
     """
-    if isinstance(transformed_data, dict) and isinstance(s3_bucket, str):
+    import json, boto3
+    from botocore.exceptions import ClientError
+
+    if isinstance(transformed_data, dict) and isinstance(data_bucket, str):
         file = json.dumps(transformed_data, default=str)
-        key = f"{date.today()}"
+        key = f"{datetime.date.today()}"
         for currency in transformed_data.keys():
             key += f"-{currency}"
         key += ".json"
 
         try:
             s3_client = boto3.client("s3")
-            s3_client.put_object(Bucket=s3_bucket, Key=key, Body=file)
-            logger.info(f"Successfully loaded exchange rate info into {s3_bucket}")
+            s3_client.put_object(Bucket=data_bucket, Key=key, Body=file)
+            logger.info(f"Successfully loaded exchange rate info into {data_bucket}")
 
         except ClientError as e:
             logger.error(e)
 
     else:
         logger.error("Invalid input format")
+
+
+@dag(
+    schedule="0 1 * * *",
+    start_date=pendulum.datetime(2025, 9, 24, tz="Europe/London"),
+    catchup=False,
+    tags=["currency_exchange"],
+    is_paused_upon_creation=False
+)
+def currency_exchange_dag():
+    """
+    Apache Airflow DAG for orchestrating currency exchange ETL pipeline.
+
+    Allows orchestration of extract, tranform, load (ETL) pipeline for GBP currency exchange rates.
+    """
+    import os
+
+    DATA_BUCKET = os.environ["ce_bucket"]
+
+    @task
+    def extract_task():
+        return extract_currency_rates()
+
+    @task
+    def transform_task(extracted_data: dict, currencies_list: list = ["eur", "usd"]):
+        return transform_currency_rates(extracted_data, currencies_list)
+
+    @task
+    def load_task(transformed_data: dict, data_bucket: str):
+        return load_currency_rates(transformed_data, data_bucket)
+
+    extract_data = extract_task()
+    transformed_data = transform_task(extract_data)
+    load_task(transformed_data, DATA_BUCKET)
+
+
+currency_exchange_dag()

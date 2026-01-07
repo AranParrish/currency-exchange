@@ -1,26 +1,25 @@
 # Defines variables used across the Terraform configurations
 
+variable "ce_dag_filename" {
+    description = "Name of file containing DAG for currency exchange script"
+    type = string
+    default = "currency_exchange.py"
+}
+
 variable "s3_ce_data" {
+    description = "Name of S3 bucket where currency exchange rates are to be stored"
     type = string
     default = "currency-exchange-bucket"
 }
 
-variable "extract_lambda_name" {
+variable "s3_ce_dag_bucket" {
+    description = "Name of S3 bucket where DAG and requirements.txt files are to be stored"
     type = string
-    default = "ce-extract-lambda"
+    default = "currency-exchange-dag-bucket"
 }
 
-variable "transform_lambda_name" {
+variable "mwaa_name" {
+    description = "Name of MWAA environment"
     type = string
-    default = "ce-transform-lambda"
+    default = "test-ce-mwaa"
 }
-
-variable "load_lambda_name" {
-    type = string
-    default = "ce-load-lambda"
-}
-
-# variable "step_function_name" {
-#     type = string
-#     default = "ce-step-function"
-# }
