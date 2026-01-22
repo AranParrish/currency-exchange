@@ -14,7 +14,7 @@ provider "aws" {
 terraform {
     backend "s3" {
       region = "eu-west-2"
-      bucket= "ap-terraform-statefiles"
+      bucket= "${var.s3-backend}"
       key = "ce-statefile"
     }
 }

@@ -1,5 +1,11 @@
 # Defines variables used across the Terraform configurations
 
+variable "s3-backend" {
+    description = "Name of S3 bucket to be used for storing Terraform statefile"
+    type = string
+    default = "ap-terraform-statefiles"
+}
+
 variable "ce_dag_filename" {
     description = "Name of file containing DAG for currency exchange script"
     type = string
@@ -21,5 +27,5 @@ variable "s3_ce_dag_bucket" {
 variable "mwaa_name" {
     description = "Name of MWAA environment"
     type = string
-    default = "test-ce-mwaa"
+    default = "ce-mwaa"
 }
