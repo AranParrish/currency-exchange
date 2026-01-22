@@ -1,14 +1,16 @@
 # Currency Exchange (MWAA)
 
 ## Overview
-This project automates the collection of daily exchange rate data for GBP against selected currencies (default of USD and EUR). It includes:
+This project automates the collection of daily exchange rate data (e.g. for trend analysis) for GBP against selected currencies (default of USD and EUR). It includes:
 - **Python code** to fetch and process currency data.
 - **Terraform scripts** to deploy the workflow to **AWS Managed Workflows for Apache Airflow (MWAA)**.
 - **Makefile** and **python tests** for automation and validation.
 
-The purpose of this repository is to demonstrate how to orchestrate data workflows using Apache Airflow both locally and in the cloud (AWS MWAA).
+The purpose of this repository is to demonstrate how to orchestrate data workflows using Apache Airflow in the cloud (AWS MWAA service). By default, exchange rate data is extracted daily at 1am GMT, transformed into rate and reverse rate values for each currency, and loaded in JSON format into an S3 bucket.
 
 Pair programmed project developed using Agile methodologies by [Aran Parrish](https://github.com/AranParrish) and [Michael Lee](https://github.com/15ML).
+
+Exchange rate data extracted via API using HTTP methods from [Free Currency Exchange Rates API](https://github.com/fawazahmed0/exchange-api). Includes a fallback source for robustness.
 
 ---
 
